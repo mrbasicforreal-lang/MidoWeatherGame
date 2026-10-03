@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رحلة ميدو التفاعلية مع الطقس 🌤️🏃‍♂️</title>
+    <link rel="preconnect" href="https://googleapis.com">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: all 0.3s ease; }
+        body { margin: 0; padding: 20px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; overflow-x: hidden; position: relative; background: linear-gradient(to bottom, #bae6fd, #e0f2fe); }
+        
+        /* شاشة الإنترو الترحيبية */
+        .intro-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #38bdf8, #bae6fd, #fef08a); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        .intro-card { background: white; padding: 30px; border-radius: 32px; border: 6px solid #a39bff; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-width: 500px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; animation: fadeInUp 0.6s ease; }
+        .intro-title { font-size: 2rem; font-weight: 900; color: #1e1b4b; margin: 0; line-height: 1.4; }
+        .intro-text { font-size: 1.2rem; font-weight: 700; color: #475569; margin: 0; line-height: 1.6; }
+        
+        /* أنيميشن الدوران المرح للترحيب في الانترو */
+        .intro-hero-wrapper { height: 160px; animation: welcomeWave 2s infinite ease-in-out; }
+        
+        .start-btn { background: #001451; background: linear-gradient(to right, #3e3ef5, #8070e7); color: white; border: none; padding: 15px 45px; font-size: 1.4rem; font-weight: 900; border-radius: 50px; cursor: pointer; box-shadow: 0 10px 20px rgba(255,126,95,0.4); width: 100%; }
+        .start-btn:hover { transform: scale(1.05); box-shadow: 0 12px 24px rgba(255,126,95,0.5); }
+        
+        /* خلفيات الطقس الأربعة */
+        .bg-sunny { background: linear-gradient(to bottom, #38bdf8, #bae6fd, #fef08a) !important; }
+        .bg-cloudy { background: linear-gradient(to bottom, #94a3b8, #cbd5e1, #e2e8f0) !important; }
+        .bg-stormy { background: linear-gradient(to bottom, #1e293b, #334155, #475569) !important; animation: lightningEffect 5s infinite; }
+        .bg-snowy { background: linear-gradient(to bottom, #cbd5e1, #e2e8f0, #ffffff) !important; }
+        
+        .top-bar { width: 100%; max-width: 550px; display: flex; justify-content: space-between; background: rgba(255,255,255,0.95); padding: 15px 25px; border-radius: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); font-weight: bold; font-size: 1.2rem; z-index: 20; border: 2px solid rgba(255,255,255,0.5); display: none; }
+        .stars { color: #f59e0b; font-weight: 900; }
+        
+        .game-container { width: 100%; max-width: 550px; display: flex; flex-direction: column; align-items: center; gap: 20px; margin: auto; z-index: 10; display: none; }
+        .walking-track { width: 100%; height: 200px; position: relative; background: rgba(255,255,255,0.15); border-radius: 28px; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px; border-bottom: 10px solid rgba(0,0,0,0.15); backdrop-filter: blur(4px); }
+        
+        .hero-container { height: 140px; position: relative; z-index: 15; bottom: 0; transition: all 0.5s ease; }
+        .hero-img { height: 100%; width: auto; object-fit: contain; display: block; }
+        
+        .is-walking { animation: walkCycle 0.6s infinite alternate ease-in-out; }
+        .is-celebrating { animation: jumpCelebrate 0.5s infinite alternate ease-in-out; }
+        
+        .weather-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; overflow: hidden; }
+        .rain-drop { position: absolute; width: 2px; height: 15px; background: rgba(156, 163, 175, 0.7); animation: fallDown 0.8s linear infinite; }
+        .snow-flake { position: absolute; width: 6px; height: 6px; background: white; border-radius: 50%; animation: fallDown 2.5s linear infinite; }
+        .wind-line { position: absolute; height: 3px; background: rgba(255, 255, 255, 0.4); border-radius: 4px; animation: blowWind 1.2s linear infinite; }
+        
+        .mood-tag { position: absolute; top: 12px; background: rgba(255,255,255,0.95); padding: 6px 16px; border-radius: 20px; font-weight: bold; color: #1e293b; box-shadow: 0 4px 10px rgba(0,0,0,0.05); font-size: 0.95rem; border: 1px solid rgba(0,0,0,0.05); z-index: 20; }
+        
+        .quiz-card { width: 100%; background: white; border-radius: 28px; padding: 25px; border: 5px solid #fcd34d; box-shadow: 0 20px 40px rgba(0,0,0,0.12); text-align: center; }
+        .question { font-size: 1.35rem; font-weight: 900; color: #1e1b4b; margin-bottom: 22px; line-height: 1.6; }
+        
+        .options-list { display: flex; flex-direction: column; gap: 12px; }
+        .option-btn { width: 100%; padding: 16px; text-align: right; font-size: 1.15rem; font-weight: 700; border: 2px solid #e2e8f0; border-radius: 18px; background: #f8fafc; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+        .option-btn:hover { background: #e0e7ff; transform: translateY(-2px); border-color: #c7d2fe; }
+        
+        .correct { background: #22c55e !important; color: white !important; border-color: #16a34a !important; font-weight: 900; box-shadow: 0 4px 12px rgba(34,197,94,0.3); }
+        .wrong { background: #ef4444 !important; color: white !important; border-color: #dc2626 !important; opacity: 0.85; }
+        .disabled { pointer-events: none; }
+        .fade-out { opacity: 0.3; transform: scale(0.98); }
+        
+        .feedback-box { width: 100%; background: #1e1b4b; color: white; border-radius: 22px; padding: 20px; text-align: center; display: none; box-shadow: 0 12px 24px rgba(0,0,0,0.15); animation: fadeInUp 0.4s ease; }
+        .feedback-text { font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; line-height: 1.5; }
+        .next-btn { background: #fcd34d; color: #1e1b4b; border: none; padding: 12px 40px; font-size: 1.2rem; font-weight: 900; border-radius: 50px; cursor: pointer; box-shadow: 0 5px 15px rgba(252,211,77,0.4); }
+        .next-btn:hover { background: #fef08a; transform: scale(1.05); }
+        
+        .footer { font-size: 0.85rem; font-weight: bold; color: rgba(30,41,59,0.7); background: rgba(255,255,255,0.4); padding: 6px 20px; border-radius: 20px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.2); }
+        
+        @keyframes welcomeWave { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-8px) rotate(8deg); } }
+        @keyframes walkCycle { 0% { transform: translateY(0) rotate(-4deg); } 100% { transform: translateY(-10px) rotate(4deg); } }
+        @keyframes jumpCelebrate { 0% { transform: translateY(0) scale(1); } 100% { transform: translateY(-30px) scale(1.08); } }
+        @keyframes lightningEffect { 0%, 94%, 97%, 100% { background: linear-gradient(to bottom, #1e293b, #334155, #475569); } 95%, 96% { background: #cbd5e1; } }
+        @keyframes fallDown { 0% { transform: translateY(-20px); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(220px); opacity: 0; } }
+        @keyframes blowWind { 0% { transform: translateX(200px); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateX(-200px); opacity: 0; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body id="body-bg">
+
+    <!-- شاشة الإنترو والترحيب التفاعلية -->
+    <div class="intro-overlay" id="intro-screen">
+        <div class="intro-card">
+            <h1 class="intro-title">ازيكم انا اسمي ميدو!</h1>
+            <div class="intro-hero-wrapper">
+                <img src="mido.png" style="height: 100%; width: auto;" alt="ميدو">
+            </div>
+            <p class="intro-text">يلا نساعد صاحبنا ميدو يختار اللبس والأدوات الصح في كل أجواء وفصول السنة المختلفة! 🌤️⛈️❄️</p>
+            <button class="start-btn" onclick="startGame()">يلا نساعد ميدو 🏃‍♂️</button>
+        </div>
+        <p class="Name">:Made by <br>Mrs. Haneen Sherrif</p>
+    </div>
+
+    <div class="top-bar" id="top-bar-zone">
+        <div class="stars">⭐ النجوم: <span id="score-val">0</span></div>
+        <div id="progress-val">المرحلة: 1 من 4</div>
+    </div>
+
+    <div class="game-container" id="game-zone">
+        <div class="walking-track" id="track-zone">
+            <div class="weather-overlay" id="weather-layer"></div>
+            <div class="mood-tag" id="char-mood">ميدو مستعد لبدء المغامرة!</div>
+            <div class="hero-container is-walking" id="hero-wrapper">
+                <img src="mido.png" class="hero-img" id="hero-img" alt="ميدو">
+            </div>
+        </div>
+        <div class="quiz-card">
+            <div class="question" id="question-text">تحميل السؤال...</div>
+            <div class="options-list" id="options-container"></div>
+        </div>
+        <div class="feedback-box" id="feedback-box">
+            <div class="feedback-text" id="feedback-text">رسالة تشجيعية</div>
+            <button class="next-btn" id="next-btn" onclick="startWalkingTransition()">امشي للمرحلة اللي بعدها 🏃‍♂️</button>
+        </div>
+    </div>
+
+    <div class="footer">صُنع بحب لأطفال مصر الأذكياء 🇪🇬</div>
+    <script>
+        const allQuestions = [
+            // --- أسئلة الجو المشمس ---
+            {
+                weatherType: 'sunny', bg: 'bg-sunny', type: 'sunny',
+                charImg: 'mido.png', successImg: 'mido.png',
+                mood: 'الجو شمس وجميل خالص بره يا بطل! ☀️',
+                q: 'ميدو خارج يلعب في الشمس المنورة، محتاج يلبس إيه في راسه عشان يحمي عينه؟',
+                options: [
+                    { text: '🧥 معطف شتا تقيل جداً', correct: false, feedback: 'لا كدا ميدو هيحرّ أوي وهيعرق يا صديقي! فكر تاني.' },
+                    { text: '🧢 كاب ونظارة شمس حلوة', correct: true, feedback: 'شاطر جداً! الكاب والنظارة هيحموه من الشمس الحامية.' },
+                    { text: '☔ شمسية المطر الكبيرة', correct: false, feedback: 'المظلة بنشيلها لما الدنيا تمطر، والشمس مش محتاجة شمسية!' }
+                ]
+            },
+            {
+                weatherType: 'sunny', bg: 'bg-sunny', type: 'sunny',
+                charImg: 'mido.png', successImg: 'mido.png',
+                mood: 'الجو حر الصيف جه في الأسكندرية! ',
+                q: 'ميدو راجع من المدرسة والجو حر جداً، يشرب إيه عشان يروي عطشه ويبقى منتعش؟',
+                options: [
+                    { text: '☕ كوباية شاي سخنة بتغلي', correct: false, feedback: 'الشاي السخن هيخليه يحس بالحر أكتر يا بطل!' },
+                    { text: '🥤 عصير ساقع', correct: true, feedback: 'الله ينور عليك! العصير الساقع هيرطب عليه ويخليه فريش.' },
+                    { text: '🍲 شوربة سخنة', correct: false, feedback: 'الشوربة السخنة بناكلها في الشتا لما نكون سقعانين!' }
+                ]
+            },
+            // --- أسئلة الجو المغيم والتراب ---
+            {
+                weatherType: 'cloudy', bg: 'bg-cloudy', type: 'wind',
+                charImg: 'mido.png', successImg: 'mido.png',
+                mood: 'بص فوق كدا.. الشمس استخبت ورا السحاب الكتير! ☁️',
+                q: 'السماء مليانة سحاب رمادي والشمس مش باينة خالص، تفتكر الجو كدا ماله ؟',
+                options: [
+                    { text: ' الجو مغيم وضلم شوية وممكن تمطر', correct: true, feedback: 'صح جداً! السحاب الكتير المغيم ده معناه إن المطرة قربت تنزل.' },
+                    { text: ' الجو شمس حامية جداً ونروح البحر', correct: false, feedback: 'البحر محتاج شمس منورة، لكن الجو مغيم ومفيش شمس خالص!' },
+                    { text: ' الجو حر جدا', correct: false, feedback: 'لما الشمس بتستخبى الجو بيبقى لطيف ومش حر خالص.' }
+                ]
+            },
+            {
+                weatherType: 'cloudy', bg: 'bg-cloudy', type: 'wind',
+                charImg: 'mido.png', successImg: 'mido.png',
+                mood: 'الهواء بدأ يتحرك وبقى في تراب وعفرة في الجو! 💨',
+                q: 'الهواء شديد وطير الورق وفي شوية تراب في الشارع، ميدو يحمي عينه ونفسه بإيه؟',
+                options: [
+                    { text: '👕 تيشرت خفيف بنص كم', correct: false, feedback: 'التيشرت مش هيحمي عينه ولا هيبعد عنه التراب!' },
+                    { text: '😷 يلبس كمامة ونظارة تحميه', correct: true, feedback: 'ممتاز! الكمامة هتحمي نفسه من التراب والنظارة هتحمي عينه.' },
+                    { text: '🍦 آيس كريم مثلج وساقع', correct: false, feedback: 'الآيس كريم ملوش علاقة بحماية ميدو من التراب والعفرة!' }
+                ]
+            },
+            // --- أسئلة الشتا والرعد ---
+            {
+                weatherType: 'stormy', bg: 'bg-stormy', type: 'rain',
+                charImg: 'mido.png', successImg: 'mido.png',
+                mood: 'الدنيا بتمطر جامد وفي صوت رعد في السماء! ⛈️',
+                q: 'المطر شغال وفجأة ظهر نور قوي في السماء وصوت عالي (برق ورعد)، ميدو المفروض يعمل إيه؟',
+                options: [
+                    { text: '🏃‍♂️ يجري يلعب تحت المطر في الشارع', correct: false, feedback: 'خطر يا بطل! البرق والرعد والمطر الشديد ممكن يتعبوه، لازم يستخبى.' },
+                    { text: '🏠 يقعد في البيت دفيان ويشوف المطر من الشباك', correct: true, feedback: 'برافو عليك! قعدة البيت في المطر والرعد أمان وبتدفيه.' },
+                    { text: '🧗‍♂️ يلعب في البلكونة فوق السور', correct: false, feedback: 'خطر جداً! السور بيبقى مبلول ومزحلق وقت المطر.' }
+                ]
+            },
+            {
+                weatherType: 'stormy', bg: 'bg-stormy', type: 'rain',
+                charImg: 'mido.png', successImg: 'mido.png',
+                mood: 'الجو ساقعة أوي والمطر نازل فوق راس ميدو! 🌧️',
+                q: 'ميدو لازم يروح المدرسة والدنيا بتمطر بره، تفتكر هياخد إيه في إيده وهو ماشي؟',
+                options: [
+                    { text: 'شورت قصير', correct: false, feedback: 'رجليه هتتبل مية وساقعة أوي! لازم حذاء مقفول.' },
+                    { text: '☔ شمسية تحميه من المية وجاكيت تقيل', correct: true, feedback: 'أحسنت! الشميسة هتبعد عنه المطر والجاكيت هيدفيه.' },
+                    { text: '🕶️ نظارة شمسية سوداء', correct: false, feedback: 'مفيش شمس خالص يا بطل عشان يلبس نظارة شمس!' }
+                ]
+            },
+            // --- أسئلة الثلج ---
+            {
+                weatherType: 'snowy', bg: 'bg-snowy', type: 'snow',
+                charImg: 'mido.png', successImg: 'mido.png',
+                mood: 'الجو بقى ساقعة تلج والثلج بينزل يغطي الشارع! ❄️',
+                q: 'الدنيا ساقعة جداً والثلج نازل من السماء، ميدو يلبس إيه عشان يتدفى؟',
+                options: [
+                    { text: '👕 تيشرت صيفي خفيف', correct: false, feedback: 'برررر! تيشرت في الثلج والبرد ده؟ كدا ميدو هيتعب جامد!' },
+                    { text: '🧣 جوانتي في إيده وكوفية صوف تدفي رقبته', correct: true, feedback: 'الله ينور عليك! الجوانتي والكوفية هيخلوه دفيان ومش حاسس بالبرد.' },
+                    { text: '⌚ الساعة', correct: false, feedback: 'الساعة مش بتدفي الإيد في التلج يا بطل!' }
+                ]
+            },
+            {
+                weatherType: 'snowy', bg: 'bg-snowy', type: 'snow',
+                charImg: 'mido.png', successImg: 'mido.png',
+                mood: 'الأرض كلها بقت بيضاء ومليانة ثلج جميل! ☃️',
+                q: 'ميدو عايز يلعب بالثلج مع أصحابه ويعملوا رجل ثلج كبير، يلبس إيه في رجله？',
+                options: [
+                    { text: '👟 كوتشي خفيف خالص ومخرم', correct: false, feedback: 'المية والثلج هيدخلوا جوه الكوتشي ورجليه تسقع!' },
+                    { text: '🥾 بوت طويل ومقفول يحميه من الساقعة', correct: true, feedback: 'ممتاز! البوت المقفول بيمنع التلج والمية يدخلوا لرجليه ويثبت في المشي.' },
+                    { text: ' شبشب البيت الخفيف', correct: false, feedback: 'الشبشب هيتزحلق في التلج ومش هيدفي رجليه خالص!' }
+                ]
+            }
+        ];
+
+        let gameQuestions = [];
+        let currentIdx = 0;
+        let score = 0;
+
+        // دالة بدء اللعبة وإخفاء الإنترو بسلاسة
+        function startGame() {
+            document.getElementById('intro-screen').style.display = 'none';
+            document.getElementById('top-bar-zone').style.display = 'flex';
+            document.getElementById('game-zone').style.display = 'flex';
+            
+            setupRandomQuestions();
+            loadLevel();
+        }
+
+        function setupRandomQuestions() {
+            gameQuestions = [];
+            const types = ['sunny', 'cloudy', 'stormy', 'snowy'];
+            
+            types.forEach(type => {
+                const filtered = allQuestions.filter(q => q.weatherType === type);
+                const randomQ = filtered[Math.floor(Math.random() * filtered.length)];
+                gameQuestions.push(randomQ);
+            });
+            
+            gameQuestions.sort(() => Math.random() - 0.5);
+        }
+
+        function makeWeatherEffects(type) {
+            const layer = document.getElementById('weather-layer');
+            layer.innerHTML = '';
+            let count = type === 'wind' ? 10 : 30;
+            
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                const randomLeft = Math.random() * 100;
+                const randomDelay = Math.random() * 2;
+                const randomDuration = (Math.random() * 1) + 0.5;
+                
+                if (type === 'rain') {
+                    particle.className = 'rain-drop';
+                    particle.style.left = `${randomLeft}%`;
+                    particle.style.animationDelay = `${randomDelay}s`;
+                    layer.appendChild(particle);
+                } else if (type === 'snow') {
+                    particle.className = 'snow-flake';
+                    particle.style.left = `${randomLeft}%`;
+                    particle.style.animationDelay = `${randomDelay}s`;
+                    particle.style.animationDuration = `${randomDuration + 1.5}s`;
+                    layer.appendChild(particle);
+                } else if (type === 'wind') {
+                    particle.className = 'wind-line';
+                    particle.style.top = `${Math.random() * 90}%`;
+                    particle.style.width = `${(Math.random() * 40) + 20}px`;
+                    particle.style.animationDelay = `${randomDelay}s`;
+                    layer.appendChild(particle);
+                }
+            }
+        }
+
+        function loadLevel() {
+            const lvl = gameQuestions[currentIdx];
+            const wrapper = document.getElementById('hero-wrapper');
+            const img = document.getElementById('hero-img');
+            
+            document.getElementById('body-bg').className = lvl.bg;
+            makeWeatherEffects(lvl.type);
+            
+            img.src = lvl.charImg;
+            wrapper.className = 'hero-container is-walking'; 
+            
+            document.getElementById('char-mood').innerText = lvl.mood;
+            document.getElementById('question-text').innerText = lvl.q;
+            document.getElementById('progress-val').innerText = `المرحلة: ${currentIdx + 1} من ${gameQuestions.length}`;
+            document.getElementById('feedback-box').style.display = 'none';
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            lvl.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt.text;
+                btn.onclick = () => selectOption(idx, opt.correct, opt.feedback);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectOption(chosenIdx, isCorrect, feedbackText) {
+            const lvl = gameQuestions[currentIdx];
+            const buttons = document.querySelectorAll('.option-btn');
+            const wrapper = document.getElementById('hero-wrapper');
+            
+            if(isCorrect) {
+                score++;
+                document.getElementById('score-val').innerText = score;
+                wrapper.className = 'hero-container is-celebrating';
+            } else {
+                wrapper.className = 'hero-container';
+            }
+
+            buttons.forEach((btn, idx) => {
+                btn.classList.add('disabled');
+                if(lvl.options[idx].correct) btn.classList.add('correct');
+                else if(idx === chosenIdx) btn.classList.add('wrong');
+                else btn.classList.add('fade-out');
+            });
+
+            document.getElementById('feedback-text').innerText = feedbackText;
+            document.getElementById('feedback-box').style.display = 'block';
+            
+            if(currentIdx === gameQuestions.length - 1) {
+                document.getElementById('next-btn').innerText = 'رؤية النتيجة النهائية 🏆';
+            }
+        }
+
+        function startWalkingTransition() {
+            const wrapper = document.getElementById('hero-wrapper');
+            wrapper.className = 'hero-container is-walking';
+            wrapper.style.transform = 'translateX(-180px) scale(0.7)';
+            wrapper.style.opacity = '0';
+
+            setTimeout(() => {
+                wrapper.style.transform = 'translateX(0) scale(1)';
+                wrapper.style.opacity = '1';
+                if(currentIdx < gameQuestions.length - 1) {
+                    currentIdx++;
+                    loadLevel();
+                } else {
+                    showEndScreen();
+                }
+            }, 750);
+        }
+
+        function showEndScreen() {
+            document.getElementById('game-zone').innerHTML = `
+                <div class="quiz-card" style="margin-top:40px;">
+                    <div style="font-size:4.5rem; margin-bottom:10px;">🏆👑🏆</div>
+                    <h2 class="question">ممتاز يا بطل الطقس الذكي!</h2>
+                    <p style="font-weight:bold; color:#475569; font-size:1.1rem;">لقد ساعدت ميدو يتمشى في كل فصول السنة واجتزت الرحلة بنجاح!</p>
+                    <div style="background:#f0fdf4; border:3px solid #bbf7d0; padding:18px; border-radius:20px; margin:20px 0; font-size:1.6rem; font-weight:bold; color:#16a34a;">
+                        عدد النجوم اللي جمعتها: ${score} من ${gameQuestions.length} ⭐
+                    </div>
+                    <button class="next-btn" style="width:100%; padding:16px; border-radius:18px;" onclick="location.reload()">العب من جديد 🔄</button>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
